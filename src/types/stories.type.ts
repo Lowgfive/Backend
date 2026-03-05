@@ -1,4 +1,4 @@
-import { Types } from "mongoose";
+import { Types, Document } from "mongoose";
 
 export interface IStory extends Document {
   name: string;
@@ -6,6 +6,9 @@ export interface IStory extends Document {
   type: string;
   description: string;
   likeCount: number;
+  viewCount: number;
+  status: string;
+  createdDate: Date;
 }
 
 export interface IStoryLike extends Document {

@@ -14,6 +14,19 @@ const storySchema = new Schema<IStory>(
       default: 0,
       min: 0,
     },
+    viewCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    status: {
+      type: String,
+      default: "ACTIVE",
+    },
+    createdDate: {
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,

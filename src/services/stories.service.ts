@@ -1,6 +1,62 @@
 
 import { Types } from "mongoose";
 import { Story, StoryLike } from "../model/stories.model";
+import { User } from "../model/user.model";
+
+export const getHomeStoriesService = async (userId?: string, limit: number = 5) => {
+  const selectFields = "name image type description likeCount createdDate viewCount status";
+  
+  const [topLiked, newest, topViewed] = await Promise.all([
+    Story.find().sort({ likeCount: -1 }).limit(limit).select(selectFields),
+    Story.find().sort({ createdDate: -1 }).limit(limit).select(selectFields),
+    Story.find().sort({ viewCount: -1 }).limit(limit).select(selectFields)
+  ]);
+
+  let recommendedType: string | null = null;
+
+  if (userId) {
+    const user = await User.findById(userId);
+    if (user && user.reading_history && user.reading_history.length > 0) {
+      const typeCounts = user.reading_history.reduce((acc: any, type: string) => {
+        acc[type] = (acc[type] || 0) + 1;
+        return acc;
+      }, {});
+
+      recommendedType = Object.keys(typeCounts).reduce((a, b) =>
+        typeCounts[a] > typeCounts[b] ? a : b
+      );
+    }
+  }
+
+  if (!recommendedType) {
+    const distinctTypes = await Story.distinct("type");
+    if (distinctTypes.length > 0) {
+      const randomIndex = Math.floor(Math.random() * distinctTypes.length);
+      recommendedType = distinctTypes[randomIndex];
+    }
+  }
+
+  let recommended = [];
+  if (recommendedType) {
+    recommended = await Story.find({type: recommendedType })
+      .limit(limit)
+      .select(selectFields);
+  } else {
+    // Fallback if no types exist
+    recommended = await Story.aggregate([
+      { $sample: { size: limit } },
+      { $project: { name: 1, image: 1, type: 1, description: 1, likeCount: 1, createdDate: 1, viewCount: 1, status: 1 } }
+    ]);
+  }
+
+  return {
+    topLiked,
+    newest,
+    topViewed,
+    recommended
+  };
+};
+
 
 export const toggleLikeService = async (
   userId: string,
