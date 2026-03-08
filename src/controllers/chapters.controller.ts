@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getStoryChaptersListService, readChapterAndPreloadService } from "../services/chapters.service";
+import { CreateChapterService, getStoryChaptersListService, readChapterAndPreloadService } from "../services/chapters.service";
 
 export const getStoryChaptersList = async (req: Request, res: Response) => {
     const storyId = req.params.storyId as string;
@@ -15,7 +15,6 @@ export const getStoryChaptersList = async (req: Request, res: Response) => {
 export const readChapter = async (req: Request, res: Response) => {
     const storyId = req.params.storyId as string;
     const chapterNumberStr = req.params.chapterNumber as string;
-    const userId = req.params.userId as string
     if (!storyId || !chapterNumberStr) {
         return res.status(400).json({ message: "storyId and chapterNumber are required" });
     }
@@ -25,6 +24,21 @@ export const readChapter = async (req: Request, res: Response) => {
         return res.status(400).json({ message: "Invalid chapterNumber" });
     }
 
-    const chapter = await readChapterAndPreloadService(storyId, num, userId);
+    const chapter = await readChapterAndPreloadService(storyId, num);
     res.status(200).json(chapter);
 };
+
+
+export const CreateChapter = async (req : Request, res : Response) => {
+    try {
+    const {storyId , chapters} = req.body;
+    const createC = await CreateChapterService(storyId, chapters)
+    console.log(createC)
+    if(createC) {
+        return res.status(200).json({message : "Thêm Chapter Thành Công !"})
+    }
+    } catch (error : any) {
+        console.log(error)
+        res.status(500).json({message : error});
+    }
+}

@@ -2,6 +2,7 @@ import { Chapter } from "../model/chapter.model";
 import { redisClient } from "../config/redis";
 import mongoose from "mongoose";
 import { Story } from "../model/stories.model";
+import { ChapterInput } from "../types/chapter.type";
 
 const CACHE_TTL = 3600; // 1 hour
 
@@ -33,21 +34,14 @@ const triggerBackgroundPrefetching = async (storyId: string, currentChapterNumbe
 };
 
 // 2. Lấy 1 Chương và Tự Động Kích Hoạt Nạp Trước
-export const readChapterAndPreloadService = async (storyId: string, chapterNumber: number, userId: string) => {
-    const key = `Chapter:storyId:${storyId}/chapterNumber:${chapterNumber}`
-    const viewCount = `View:storyId:${storyId}/chapterNumber:${chapterNumber}/userId:${userId}`
-    const getView = await redisClient.get(viewCount)
-    if (userId) {
+export const readChapterAndPreloadService = async (storyId: string, chapterNumber: number) => {
+    const key = `Chapter${storyId}:${chapterNumber}`
+    const viewCount = `View${storyId}:${chapterNumber}`
+    const newView =  await redisClient.set(viewCount, 1, { EX: 600 , NX : true})
 
-        if (!getView) {
-            await redisClient.set(viewCount, 1, { EX: 600 })
-            const view = await redisClient.incr(storyId)
-            console.log("view tai thoi diem nay " + view)
+        if (newView) {
+            await Story.findByIdAndUpdate(storyId, { $inc : {viewCount : 1}})
         }
-        else {
-            console.log("Khong tang")
-        }
-    }
 
     const cache = await redisClient.get(key)
     if (cache) {
@@ -63,3 +57,25 @@ export const readChapterAndPreloadService = async (storyId: string, chapterNumbe
 
     return chapter
 };
+
+export const CreateChapterService = async (
+    storyId : string, chapters : ChapterInput[]
+) => {
+
+    chapters.map(ch => console.log("chapterNum "+ch.chapterNumber + " title " + ch.title + " content " + ch.content))
+    const insertChapter = await Chapter.insertMany(
+        chapters.map(ch => ({
+            storyId : storyId,
+            chapterNumber : ch.chapterNumber,
+            title : ch.title,
+            content : ch.content
+        }
+        ))
+    )
+
+    await Story.findByIdAndUpdate(storyId, { $inc : {
+        totalChapters : insertChapter.length
+    }})
+
+    return insertChapter;
+}

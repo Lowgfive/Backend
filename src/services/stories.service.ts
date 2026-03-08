@@ -90,3 +90,22 @@ export const toggleLikeService = async (
     return { liked: true };
   }
 };
+
+// nen lam them cai chong spam like 
+
+export const createStoryService = async (userId : string, name : string, image : string , type : string , description : string) => {
+    const nameOfStory = await Story.find().select("name -_id");
+    const existName = nameOfStory.find(item => item.name.includes(name))
+    if(existName) {
+      return;
+    }
+
+    const insertStory = await Story.create({
+        name : name,
+        image : image,
+        type : type,
+        description : description,
+        userId : userId
+    })
+    return insertStory;
+}

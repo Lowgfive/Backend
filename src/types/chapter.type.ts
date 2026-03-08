@@ -6,3 +6,9 @@ export type ChapterType = {
     title: string;
     content: string;
 };
+
+export type ChapterInput = {
+    chapterNumber: number;
+    title: string;
+    content: string;
+}

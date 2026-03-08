@@ -1,5 +1,6 @@
 import { Router } from "express";
-import { getStoryChaptersList, readChapter } from "../controllers/chapters.controller";
+import { CreateChapter, getStoryChaptersList, readChapter } from "../controllers/chapters.controller";
+import { authenticate } from "../middlewares/auth.middleware";
 
 const router = Router({ mergeParams: true });
 
@@ -7,7 +8,8 @@ const router = Router({ mergeParams: true });
 router.get("/:storyId/list", getStoryChaptersList);
 
 // Đọc một chương cụ thể (Có cơ chế Cache & Chạy ngầm Tải trước)
-router.get("/:storyId/read/:chapterNumber/:userId", readChapter);
+router.get("/:storyId/read/:chapterNumber", readChapter);
 
+router.post("/createChapter", authenticate ,CreateChapter);
 
 export default router;
