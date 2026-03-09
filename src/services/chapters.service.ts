@@ -9,7 +9,7 @@ const CACHE_TTL = 3600; // 1 hour
 // 1. API: Lấy Danh Mục Truyện (Loại bỏ content để tiết kiệm băng thông)
 export const getStoryChaptersListService = async (storyId: string) => {
     const chapters = await Chapter.find({ storyId })
-        .select("title chapterNumber -_id") // Bỏ _id và bỏ content
+        .select("title chapterNumber _id createdAt updatedAt") 
         .sort({ chapterNumber: 1 })
         .lean();
 

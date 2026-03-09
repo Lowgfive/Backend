@@ -9,7 +9,7 @@ export const getHomeStories = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 5;
 
     const result = await getHomeStoriesService(userId, limit);
-
+    
     res.json(result);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
