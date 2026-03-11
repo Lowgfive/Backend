@@ -1,12 +1,11 @@
 import { Router } from "express";
-import { register, login } from "../controllers/auth.controller";
+import { register, login, getProfile } from "../controllers/auth.controller";
 import { authenticate } from "../middlewares/auth.middleware";
+import { asyncHandler } from "../middlewares/asyncHandler";
 
 const authRoute = Router();
 
-authRoute.post("/register", register);
-authRoute.post("/login", login);
-authRoute.get("/profile", authenticate, (req, res) => {
-  res.json({ message: "Protected route", user: (req as any).user });
-});
+authRoute.post("/register", asyncHandler(register));
+authRoute.post("/login", asyncHandler(login));
+authRoute.get("/profile", authenticate, asyncHandler(getProfile));
 export default authRoute;

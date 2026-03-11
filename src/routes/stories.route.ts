@@ -1,16 +1,19 @@
 import { Router } from "express";
 
-import { authenticate, optionalAuthenticate } from "../middlewares/auth.middleware";
-import { createStory, getHomeStories, toggleLike } from "../controllers/stories.controller";
+import { authenticate } from "../middlewares/auth.middleware";
+import { createStory, getHomeStories, getlikeStory, toggleLike } from "../controllers/stories.controller";
+import { asyncHandler } from "../middlewares/asyncHandler";
 
 const storyRoute = Router();
 
 // Get home stories
-storyRoute.get("/home", getHomeStories);
+storyRoute.get("/home", asyncHandler(getHomeStories));
 
 // Toggle like
-storyRoute.post("/like", authenticate, toggleLike);
+storyRoute.post("/like", authenticate, asyncHandler(toggleLike));
+
+storyRoute.get("/getLikeStory", authenticate, asyncHandler(getlikeStory));
 
 
-storyRoute.post("/create", authenticate , createStory)
+storyRoute.post("/create", authenticate , asyncHandler(createStory))
 export default storyRoute;

@@ -1,5 +1,5 @@
 
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { Story, StoryLike } from "../model/stories.model";
 import { User } from "../model/user.model";
 import { redisClient } from "../config/redis";
@@ -84,6 +84,34 @@ export const getHomeStoriesService = async (userId?: string, limit: number = 5) 
   return result
 };
 
+export const likeStoryService = async (userId: string) => {
+  
+  return await StoryLike.aggregate([
+  {
+    $match: {
+      userId: new mongoose.Types.ObjectId(userId)
+    }
+  },
+  {
+    $lookup: {
+      from: "stories",
+      localField: "storyId",
+      foreignField: "_id",
+      as: "TableLike"
+    }
+  },
+  {
+    $unwind: "$TableLike"
+  },
+  {
+    $group: {
+      _id: null,
+      totalLiked: { $sum: 1 },
+      stories: { $push: "$TableLike" }
+    }
+  }
+]);
+}
 
 export const toggleLikeService = async (
   userId: string,

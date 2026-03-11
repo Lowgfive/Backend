@@ -20,8 +20,8 @@ export const getStoryChaptersListService = async (storyId: string) => {
 const triggerBackgroundPrefetching = async (storyId: string, currentChapterNumber: number) => {
     let after = currentChapterNumber + 1;
     let afterafter = currentChapterNumber + 2
-    const key = `Chapter:storyId:${storyId}/chapterNumber:${after}` // key nên đồng bộ 
-    const otherkey = `Chapter:storyId:${storyId}/chapterNumber:${afterafter}` // key nên đồng bộ 
+    const key = `Chapter:${storyId}:${after}` // key nên đồng bộ 
+    const otherkey = `Chapter:${storyId}:${afterafter}` // key nên đồng bộ 
 
     const [chapter1, chapter2] = await Promise.all([Chapter.findOne({ storyId: storyId, chapterNumber: after }), Chapter.findOne({ storyId: storyId, chapterNumber: afterafter })])
 
@@ -29,22 +29,23 @@ const triggerBackgroundPrefetching = async (storyId: string, currentChapterNumbe
         await redisClient.set(key, JSON.stringify(chapter1), { EX: 600 })
     }
     if (chapter2) {
-        await redisClient.set(otherkey, JSON.stringify(chapter2), { EX: 600 })
+        await redisClient.set(otherkey, JSON.stringify(chapter2), { EX: 1200 })
     }
 };
 
 // 2. Lấy 1 Chương và Tự Động Kích Hoạt Nạp Trước
 export const readChapterAndPreloadService = async (storyId: string, chapterNumber: number) => {
-    const key = `Chapter${storyId}:${chapterNumber}`
+    const key = `Chapter:${storyId}:${chapterNumber}`
     const viewCount = `View${storyId}:${chapterNumber}`
     const newView =  await redisClient.set(viewCount, 1, { EX: 600 , NX : true})
-
+    
         if (newView) {
             await Story.findByIdAndUpdate(storyId, { $inc : {viewCount : 1}})
         }
 
     const cache = await redisClient.get(key)
     if (cache) {
+        console.log("cache hit in chapter number")
         triggerBackgroundPrefetching(storyId, chapterNumber)
         return JSON.parse(cache)
     }

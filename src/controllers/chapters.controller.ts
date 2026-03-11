@@ -1,7 +1,9 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { CreateChapterService, getStoryChaptersListService, readChapterAndPreloadService } from "../services/chapters.service";
+import { updateReadingProgressService } from "../services/readingHistory.service";
+import { AuthRequest } from "../middlewares/auth.middleware";
 
-export const getStoryChaptersList = async (req: Request, res: Response) => {
+export const getStoryChaptersList = async (req: Request, res: Response, next: NextFunction) => {
     const storyId = req.params.storyId as string;
 
     if (!storyId) {
@@ -12,33 +14,38 @@ export const getStoryChaptersList = async (req: Request, res: Response) => {
     res.status(200).json(list);
 };
 
-export const readChapter = async (req: Request, res: Response) => {
+export const readChapter = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const storyId = req.params.storyId as string;
     const chapterNumberStr = req.params.chapterNumber as string;
     if (!storyId || !chapterNumberStr) {
         return res.status(400).json({ message: "storyId and chapterNumber are required" });
     }
-
     const num = parseFloat(chapterNumberStr);
+
     if (isNaN(num)) {
         return res.status(400).json({ message: "Invalid chapterNumber" });
     }
-
-    const chapter = await readChapterAndPreloadService(storyId, num);
+    
+    const chapter = await readChapterAndPreloadService(storyId, num );
+    console.log('da chay xuong day ...')
+    // Tracks reading progress automatically if user is logged in (Non-blocking)
+    const userId = req.user?.id || req.user?._id;
+    console.log("userId la " + userId)
+    if (userId && chapter && chapter._id) {
+        // Run asynchronously without blocking the response
+        updateReadingProgressService(userId, storyId, chapter._id.toString(), num)
+            .then(() => console.log("Reading progress updated successfully"))
+            .catch(err => console.error("Failed to update reading progress:", err));
+    }
+    
+    // Trả về cho frontend ngay lập tức (dù là dữ liệu cache hay db)
     res.status(200).json(chapter);
 };
 
-
-export const CreateChapter = async (req : Request, res : Response) => {
-    try {
+export const CreateChapter = async (req: Request, res: Response, next: NextFunction) => {
     const {storyId , chapters} = req.body;
-    const createC = await CreateChapterService(storyId, chapters)
-    console.log(createC)
+    const createC = await CreateChapterService(storyId, chapters);
     if(createC) {
-        return res.status(200).json({message : "Thêm Chapter Thành Công !"})
+        return res.status(200).json({message : "Thêm Chapter Thành Công !"});
     }
-    } catch (error : any) {
-        console.log(error)
-        res.status(500).json({message : error});
-    }
-}
+};

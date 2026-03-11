@@ -7,6 +7,7 @@ const userSchema = new Schema<UserType>(
     email: { type: String, required: true },
     password: { type: String, required: true },
     avatar: { type: String, default: "" },
+    description : { type: String, default: ""},
     reading_history: { type: [String], default: [] },
   },
   {

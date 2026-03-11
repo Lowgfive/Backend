@@ -1,12 +1,9 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { createCommentService } from "../services/comment.service";
 
-
-export const createCommentController = async (req: Request, res: Response) => {
-  try {
+export const createCommentController = async (req: Request, res: Response, next: NextFunction) => {
     const { content, storyId } = req.body;
     const userId = (req as any).user.id;
-    console.log(userId)
     const comment = await createCommentService({
       content,
       userId,
@@ -17,10 +14,4 @@ export const createCommentController = async (req: Request, res: Response) => {
       message: "Create comment successfully",
       data: comment
     });
-
-  } catch (error: any) {
-    res.status(500).json({
-      message: error.message
-    });
-  }
 };

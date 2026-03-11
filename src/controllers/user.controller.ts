@@ -1,8 +1,8 @@
-import { Response } from "express";
+import { Response, NextFunction } from "express";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { getUserProfileService } from "../services/user.service";
 
-export const getUserProfile = async (req: AuthRequest, res: Response) => {
+export const getUserProfile = async (req: AuthRequest, res: Response, next: NextFunction) => {
     const userId = req.user?.id; // Assuming user.id comes from decoded JWT
 
     if (!userId) {

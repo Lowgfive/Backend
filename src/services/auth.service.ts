@@ -23,10 +23,10 @@ export const registerService = async (data: UserType) => {
 
 export const loginService = async (email: string, password: string) => {
   const user = await User.findOne({ email });
-  if (!user) throw new Error("Invalid credentials");
+  if (!user) throw new Error("Email không tồn tại!");
 
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) throw new Error("Invalid credentials");
+  if (!isMatch) throw new Error("Sai mật khẩu vui lòng nhập lại!");
 
   const token = jwt.sign(
     { id: user._id },
@@ -38,6 +38,6 @@ export const loginService = async (email: string, password: string) => {
 };
 
 export const getUserProfileService = async (userId: string): Promise<UserType | null> => {
-
+  
   return await User.findById(userId).select("-password");
 };

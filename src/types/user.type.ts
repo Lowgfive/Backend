@@ -8,6 +8,7 @@ export type UserType = {
   email: string;
   password: string;
   avatar?: string;
+  description : string;
   reading_history?: string[];
 };
 
