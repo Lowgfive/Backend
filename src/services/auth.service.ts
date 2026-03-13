@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 
 import { UserType } from "../types/user.type";
 import { User } from "../model/user.model";
+import { Money } from "../model/money.model";
 
 export const registerService = async (data: UserType) => {
   const { email, password, username } = data;
@@ -27,6 +28,13 @@ export const loginService = async (email: string, password: string) => {
 
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) throw new Error("Sai mật khẩu vui lòng nhập lại!");
+
+  // Ensure money record exists
+  await Money.findOneAndUpdate(
+    { userId: user._id },
+    { userId: user._id, balance: 1000 },
+    { upsert: true, setDefaultsOnInsert: true }
+  );
 
   const token = jwt.sign(
     { id: user._id },

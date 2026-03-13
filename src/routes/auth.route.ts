@@ -8,4 +8,5 @@ const authRoute = Router();
 authRoute.post("/register", asyncHandler(register));
 authRoute.post("/login", asyncHandler(login));
 authRoute.get("/profile", authenticate, asyncHandler(getProfile));
+// authRoute.post("/updateProfile");
 export default authRoute;

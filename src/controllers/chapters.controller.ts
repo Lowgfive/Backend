@@ -27,10 +27,10 @@ export const readChapter = async (req: AuthRequest, res: Response, next: NextFun
     }
     
     const chapter = await readChapterAndPreloadService(storyId, num );
-    console.log('da chay xuong day ...')
+
     // Tracks reading progress automatically if user is logged in (Non-blocking)
     const userId = req.user?.id || req.user?._id;
-    console.log("userId la " + userId)
+
     if (userId && chapter && chapter._id) {
         // Run asynchronously without blocking the response
         updateReadingProgressService(userId, storyId, chapter._id.toString(), num)

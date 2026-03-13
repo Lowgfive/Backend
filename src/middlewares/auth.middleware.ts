@@ -10,7 +10,6 @@ export const authenticate = (
   res: Response,
   next: NextFunction
 ) => {
-  console.log("Headers:", req.headers);
   const authHeader = req.header("Authorization")
 
   if (!authHeader)

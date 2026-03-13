@@ -3,6 +3,7 @@ import { CreateChapter, getStoryChaptersList, readChapter } from "../controllers
 import { authenticate } from "../middlewares/auth.middleware";
 import { optionalAuthenticate } from "../middlewares/optionalAuth.middleware";
 import { asyncHandler } from "../middlewares/asyncHandler";
+import { unlockChapterController } from "../controllers/money.controller";
 
 const router = Router({ mergeParams: true });
 
@@ -13,5 +14,9 @@ router.get("/:storyId/list", asyncHandler(getStoryChaptersList));
 router.get("/:storyId/read/:chapterNumber", optionalAuthenticate, asyncHandler(readChapter));
 
 router.post("/createChapter", authenticate ,asyncHandler(CreateChapter));
+
+router.post("/unlockChapter", authenticate ,asyncHandler(unlockChapterController));
+
+
 
 export default router;

@@ -7,7 +7,7 @@ const storySchema = new Schema<IStory>(
   {
     name: { type: String, required: true },
     image: { type: String, required: true },
-    type: { type: String, enum : ["Huyền Huyễn", "Tu Tiên", "Đam Mỹ", "Bách Hợp", "Đô Thị", "Dị Năng", "Xuyên Không", "Cẩu Đạo"],  required: true },
+    type: { type: String, enum : ["Huyền Huyễn", "Tu Tiên", "Đam Mỹ", "Bách Hợp", "Đô Thị", "Dị Năng", "Xuyên Không", "Cẩu Đạo", "Đời Thường", "Lịch Sử", "Võng Du"],  required: true },
     description: { type: String, required: true },
     userId : {
       type : mongoose.Schema.Types.ObjectId,
@@ -26,7 +26,9 @@ const storySchema = new Schema<IStory>(
     },
     status: {
       type: String,
-      default: "ACTIVE",
+      enum: ["Ongoing", "Completed"],
+      default: "Ongoing",
+      required: true,
     },
     createdDate: {
       type: Date,

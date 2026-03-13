@@ -37,7 +37,11 @@ app.use("/api/user", userRoute);
 
 app.use("/api/chapters", chaptersRoute);
 
+import moneyRoute from "./routes/money.route";
+
 app.use("/api/reading-history", readingHistoryRoute);
+
+app.use("/api/money", moneyRoute);
 
 app.get("/redis-test", async (req, res) => {
   await redisClient.set("test", "hello redis");

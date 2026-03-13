@@ -164,3 +164,64 @@ export const createStoryService = async (userId: string, name: string, image: st
   })
   return insertStory;
 }
+
+// search + filter + pagination service
+export interface SearchOptions {
+  q?: string;
+  types?: string[];
+  status?: string;
+  sort?: "popular" | "newest" | "rating";
+  page?: number;
+  limit?: number;
+}
+
+export const searchStoriesService = async (opts: SearchOptions) => {
+  const {
+    q,
+    types,
+    status,
+    sort = "newest",
+    page = 1,
+    limit = 20,
+  } = opts;
+
+  const filter: any = {};
+  if (q) {
+    // simple text search on name and description
+    filter.$or = [
+      { name: { $regex: q, $options: "i" } },
+      { description: { $regex: q, $options: "i" } },
+    ];
+  }
+  if (types && types.length > 0) {
+    filter.type = { $in: types };
+  }
+  if (status) {
+    filter.status = status;
+  }
+
+  const sortOption: any = {};
+  if (sort === "popular") {
+    // popularity defined by likeCount and viewCount
+    sortOption.likeCount = -1;
+  } else if (sort === "rating") {
+    sortOption.likeCount = -1; // same as popular for now
+  } else {
+    sortOption.createdDate = -1;
+  }
+
+  const skip = (page - 1) * limit;
+  const selectFields = "name image type description likeCount createdDate viewCount status";
+
+  const [stories, total] = await Promise.all([
+    Story.find(filter)
+      .sort(sortOption)
+      .skip(skip)
+      .limit(limit)
+      .select(selectFields)
+      .populate("userId", "username"),
+    Story.countDocuments(filter),
+  ]);
+
+  return { stories, total, page, limit };
+};

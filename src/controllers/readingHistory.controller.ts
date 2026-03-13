@@ -28,10 +28,6 @@ export const updateReadingHistory = async (req: AuthRequest, res: Response, next
 
 export const getLibrary = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const userId = req.user?.id || req.user?._id;
-  
-  if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
 
   const library = await getLibraryByUserIdService(userId);
   res.status(200).json(library);
