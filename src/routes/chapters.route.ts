@@ -8,7 +8,7 @@ import { unlockChapterController } from "../controllers/money.controller";
 const router = Router({ mergeParams: true });
 
 // Lấy danh mục chương (không lấy content)
-router.get("/:storyId/list", asyncHandler(getStoryChaptersList));
+router.get("/:storyId/list",optionalAuthenticate, asyncHandler(getStoryChaptersList));
 
 // Đọc một chương cụ thể (Có cơ chế Cache & Chạy ngầm Tải trước)
 router.get("/:storyId/read/:chapterNumber", optionalAuthenticate, asyncHandler(readChapter));

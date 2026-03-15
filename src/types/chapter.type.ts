@@ -5,7 +5,6 @@ export type ChapterType = {
     chapterNumber: number;
     title: string;
     content: string;
-    isPay : boolean
 };
 
 export type ChapterInput = {

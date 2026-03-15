@@ -5,12 +5,13 @@ import { AuthRequest } from "../middlewares/auth.middleware";
 
 export const getStoryChaptersList = async (req: Request, res: Response, next: NextFunction) => {
     const storyId = req.params.storyId as string;
+    const userId = (req as any).user?.id
 
     if (!storyId) {
         return res.status(400).json({ message: "storyId is required" });
     }
 
-    const list = await getStoryChaptersListService(storyId);
+    const list = await getStoryChaptersListService(storyId, userId);
     res.status(200).json(list);
 };
 

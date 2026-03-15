@@ -30,10 +30,10 @@ export const loginService = async (email: string, password: string) => {
   if (!isMatch) throw new Error("Sai mật khẩu vui lòng nhập lại!");
 
   // Ensure money record exists
-  await Money.findOneAndUpdate(
+    await Money.findOneAndUpdate(
     { userId: user._id },
-    { userId: user._id, balance: 1000 },
-    { upsert: true, setDefaultsOnInsert: true }
+    { $setOnInsert: { userId: user._id, balance: 1000 } },
+    { upsert: true }
   );
 
   const token = jwt.sign(
@@ -46,6 +46,38 @@ export const loginService = async (email: string, password: string) => {
 };
 
 export const getUserProfileService = async (userId: string): Promise<UserType | null> => {
-  
   return await User.findById(userId).select("-password");
 };
+
+export const updateProfileService = async (userId: string, username?: string, description?: string, email?: string) => {
+  const updateData: any = {};
+  if (username) updateData.username = username;
+  if (description !== undefined) updateData.description = description;
+  if (email) updateData.email = email;
+
+  const user = await User.findByIdAndUpdate(userId, updateData, { new: true }).select("-password");
+  if (!user) throw new Error("Người dùng không tồn tại");
+
+  return user;
+};
+
+export const updateAvatarService = async (userId: string, avatar: string) => {
+  const user = await User.findByIdAndUpdate(userId, { avatar }, { new: true }).select("-password");
+  if (!user) throw new Error("Người dùng không tồn tại");
+
+  return user;
+};
+
+export const updatePasswordService = async (userId: string, oldPassword: string, newPassword: string) => {
+  const user = await User.findById(userId);
+  if (!user) throw new Error("Người dùng không tồn tại");
+
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) throw new Error("Mật khẩu cũ không đúng");
+
+  const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+  user.password = hashedNewPassword;
+  await user.save();
+
+  return true;
+};

@@ -146,6 +146,15 @@ export const toggleLikeService = async (
   }
 };
 
+export const checkLikeService = async (userId: string, storyId: string) => {
+  const existingLike = await StoryLike.findOne({
+    userId: new Types.ObjectId(userId),
+    storyId: new Types.ObjectId(storyId),
+  });
+
+  return !!existingLike; // return true if exists, false otherwise
+};
+
 // nen lam them cai chong spam like 
 
 export const createStoryService = async (userId: string, name: string, image: string, type: string, description: string) => {

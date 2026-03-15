@@ -3,20 +3,40 @@ import { redisClient } from "../config/redis";
 import mongoose from "mongoose";
 import { Story } from "../model/stories.model";
 import { ChapterInput } from "../types/chapter.type";
+import { UnlockedChapter } from "../model/unlockChapter.model";
+import { Types } from "mongoose";
 
 const CACHE_TTL = 3600; // 1 hour
 
 // 1. API: Lấy Danh Mục Truyện (Loại bỏ content để tiết kiệm băng thông)
-export const getStoryChaptersListService = async (storyId: string) => {
-    const chapters = await Chapter.find({ storyId })
-        .select("title chapterNumber _id createdAt updatedAt") 
-        .sort({ chapterNumber: 1 })
-        .lean();
+export const getStoryChaptersListService = async (storyId: string, userId: string) => {
+    const keyChapter = `listChapters:${storyId}:${userId || 'guest'}`
+    const cache = await redisClient.get(keyChapter);
 
-    return chapters;
+    if(cache) {
+        console.log("cache hit in list chapter");
+        return JSON.parse(cache)
+    }
+    let chapterUnlock: { chapterId: Types.ObjectId }[] = []
+
+    if (userId) {
+        chapterUnlock = await UnlockedChapter.find({ userId, storyId }).select("chapterId -_id").lean();
+    }
+
+    const Chapters = await Chapter.find({ storyId: new Types.ObjectId(storyId) }).select("title chapterNumber _id").lean()
+
+    const unlockSet = new Set(
+        chapterUnlock.map(item => item.chapterId.toString())
+    )
+
+    const result = Chapters.map(chapter => ({
+        ...chapter,
+        isPay: unlockSet.has(chapter._id.toString())
+    }))
+    await redisClient.set(keyChapter, JSON.stringify(result), {EX : 500})
+    return result;
 };
 
-// Hàm phụ: Helper để khởi chạy ngầm Background Prefetching
 const triggerBackgroundPrefetching = async (storyId: string, currentChapterNumber: number) => {
     let after = currentChapterNumber + 1;
     let afterafter = currentChapterNumber + 2
@@ -37,11 +57,12 @@ const triggerBackgroundPrefetching = async (storyId: string, currentChapterNumbe
 export const readChapterAndPreloadService = async (storyId: string, chapterNumber: number) => {
     const key = `Chapter:${storyId}:${chapterNumber}`
     const viewCount = `View${storyId}:${chapterNumber}`
-    const newView =  await redisClient.set(viewCount, 1, { EX: 600 , NX : true})
-    
-        if (newView) {
-            await Story.findByIdAndUpdate(storyId, { $inc : {viewCount : 1}})
-        }
+    const newView = await redisClient.set(viewCount, 1, { EX: 600, NX: true })
+
+    if (newView) {
+        console.log("da tang view")
+        await Story.findByIdAndUpdate(storyId, { $inc: { viewCount: 1 } })
+    }
 
     const cache = await redisClient.get(key)
     if (cache) {
@@ -60,23 +81,25 @@ export const readChapterAndPreloadService = async (storyId: string, chapterNumbe
 };
 
 export const CreateChapterService = async (
-    storyId : string, chapters : ChapterInput[]
+    storyId: string, chapters: ChapterInput[]
 ) => {
 
-    chapters.map(ch => console.log("chapterNum "+ch.chapterNumber + " title " + ch.title + " content " + ch.content))
+    chapters.map(ch => console.log("chapterNum " + ch.chapterNumber + " title " + ch.title + " content " + ch.content))
     const insertChapter = await Chapter.insertMany(
         chapters.map(ch => ({
-            storyId : storyId,
-            chapterNumber : ch.chapterNumber,
-            title : ch.title,
-            content : ch.content
+            storyId: storyId,
+            chapterNumber: ch.chapterNumber,
+            title: ch.title,
+            content: ch.content
         }
         ))
     )
 
-    await Story.findByIdAndUpdate(storyId, { $inc : {
-        totalChapters : insertChapter.length
-    }})
+    await Story.findByIdAndUpdate(storyId, {
+        $inc: {
+            totalChapters: insertChapter.length
+        }
+    })
 
     return insertChapter;
 }

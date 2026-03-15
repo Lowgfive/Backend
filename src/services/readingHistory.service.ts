@@ -1,4 +1,6 @@
+import { Types } from "mongoose";
 import ReadingHistory from "../model/readingHistory.model";
+import { redisClient } from "../config/redis";
 
 export const updateReadingProgressService = async (
   userId: string,
@@ -6,55 +8,34 @@ export const updateReadingProgressService = async (
   chapterId: string,
   chapterNumber: number
 ) => {
-  // Always match on (userId, storyId) to avoid duplicate upserts.
-  // Only advance progress when chapterNumber is greater than stored value.
-  const updatedHistory = await ReadingHistory.findOneAndUpdate(
-    { userId, storyId },
-    [
-      {
-        $set: {
-          lastChapterNumber: {
-            $cond: [
-              {
-                $or: [
-                  { $eq: ["$lastChapterNumber", null] },
-                  { $lt: ["$lastChapterNumber", chapterNumber] }
-                ]
-              },
-              chapterNumber,
-              "$lastChapterNumber"
-            ]
-          },
-          lastChapterId: {
-            $cond: [
-              {
-                $or: [
-                  { $eq: ["$lastChapterNumber", null] },
-                  { $lt: ["$lastChapterNumber", chapterNumber] }
-                ]
-              },
-              chapterId,
-              "$lastChapterId"
-            ]
-          }
-        }
-      },
-      {
-        $setOnInsert: {
-          userId,
-          storyId
-        }
-      }
-    ],
-    {
-      upsert: true,
-      returnDocument: "after",
-      updatePipeline: true
-    }
-  );
+  const history = await ReadingHistory.findOne({ userId, storyId });
+
+  // chưa có lịch sử đọc -> tạo mới
+  if (!history) {
+    const newHistory = await ReadingHistory.create({
+      userId,
+      storyId,
+      lastChapterId: chapterId,
+      lastChapterNumber: chapterNumber
+    });
+
+    return newHistory;
+  }
+
+  // nếu chapter mới lớn hơn thì update
+  if (chapterNumber > (history.lastChapterNumber ?? 0)) {
+    history.lastChapterId = new Types.ObjectId(chapterId);
+    history.lastChapterNumber = chapterNumber;
+    await history.save();
+  }
+
+  return history;
 };
 
 export const getLibraryByUserIdService = async (userId: string) => {
+  const keyHistory = `history:${userId}`;
+
+
   const histories = await ReadingHistory.find({ userId })
     .select("storyId lastChapterNumber updatedAt")
     .populate({
@@ -76,6 +57,7 @@ export const getLibraryByUserIdService = async (userId: string) => {
       const story = item.storyId as any;
       const authorUser = story.userId as any;
 
+
       return {
         story: {
           _id: story._id,
@@ -93,6 +75,5 @@ export const getLibraryByUserIdService = async (userId: string) => {
         updatedAt: item.updatedAt,
       };
     });
-
   return library;
 };

@@ -4,6 +4,7 @@ import { Money } from "../model/money.model";
 import { Transaction } from "../model/transaction.model";
 import mongoose from "mongoose";
 import { UnlockedChapter } from "../model/unlockChapter.model";
+import { redisClient } from "../config/redis";
 const BASE_PRICE = 50;
 
 
@@ -11,16 +12,19 @@ const BASE_PRICE = 50;
   try {
 
     const { chapterId, storyId } = req.body;
-    const userId = (req as any).user?.id;
+    const userId = (req as any).user?.id || (req as any).user?._id;
 
-    // đảm bảo có ví
+    if(!userId || !chapterId || !storyId) {
+ 
+        return res.status(400).json({ message: "Missing required parameters" });
+    }
+
     await Money.findOneAndUpdate(
       { userId },
-      { $setOnInsert: { userId, balance: 0 } },
+      { $setOnInsert: { userId, balance: 1000 } },
       { upsert: true }
     );
 
-    // kiểm tra đã unlock chưa
     const existed = await UnlockedChapter.findOne({
       userId,
       chapterId
@@ -32,6 +36,17 @@ const BASE_PRICE = 50;
       });
     }
 
+    // kiểm tra số dư hiện tại
+    const currentMoney = await Money.findOne({ userId });
+    console.log(`[UnlockChapter] Current balance: ${currentMoney?.balance}`);
+
+    if (!currentMoney || currentMoney.balance < BASE_PRICE) {
+         console.log(`[UnlockChapter] Not enough balance: ${currentMoney?.balance} < ${BASE_PRICE}`);
+         return res.status(400).json({
+            message: "Not enough balance to unlock chapter"
+         });
+    }
+
     // trừ tiền atomic
     const wallet = await Money.findOneAndUpdate(
       { userId, balance: { $gte: BASE_PRICE } },
@@ -41,7 +56,7 @@ const BASE_PRICE = 50;
 
     if (!wallet) {
       return res.status(400).json({
-        message: "Not enough balance"
+        message: "Not enough balance to unlock chapter"
       });
     }
 
@@ -74,11 +89,16 @@ const BASE_PRICE = 50;
       chapterId
     });
 
+    // Invalidate the cache for this user's chapter list
+    const keyChapter = `listChapters:${storyId}:${userId}`;
+    await redisClient.del(keyChapter);
+
     res.json({
       message: "Unlock success"
     });
 
   } catch (err) {
+    console.error(`[UnlockChapter] Uncaught Error:`, err);
     next(err);
   }
 };

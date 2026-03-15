@@ -1,7 +1,7 @@
 
 
 import { Request, Response, NextFunction } from "express";
-import { createStoryService, getHomeStoriesService, likeStoryService, toggleLikeService, searchStoriesService } from "../services/stories.service";
+import { createStoryService, getHomeStoriesService, likeStoryService, toggleLikeService, searchStoriesService, checkLikeService } from "../services/stories.service";
 
 export const getHomeStories = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).user?.id || (req as any).user?._id;
@@ -20,6 +20,21 @@ export const toggleLike = async (req: Request, res: Response, next: NextFunction
   res.json({
     message: result.liked ? "Liked story" : "Unliked story",
     liked: result.liked,
+  });
+};
+
+export const checkLike = async (req: Request, res: Response, next: NextFunction) => {
+  const userId = (req as any).user.id;
+  const { storyId } = (req as any).params;
+
+  if (!storyId) {
+    return res.status(400).json({ message: "storyId is required" });
+  }
+
+  const isLiked = await checkLikeService(userId, storyId);
+       console.log("isLiked", isLiked)
+  res.json({
+    liked: isLiked
   });
 };
 

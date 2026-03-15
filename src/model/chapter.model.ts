@@ -7,7 +7,6 @@ const chapterSchema = new Schema<ChapterType>(
         chapterNumber: { type: Number, required: true },
         title: { type: String, required: true },
         content: { type: String, required: true },
-        isPay: {type : Boolean, default : false}
     },
     {
         timestamps: true,
