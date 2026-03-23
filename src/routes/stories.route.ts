@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import { authenticate } from "../middlewares/auth.middleware";
-import { createStory, getHomeStories, getlikeStory, toggleLike, getStories, checkLike } from "../controllers/stories.controller";
+import { createStory, getHomeStories, getlikeStory, toggleLike, getStories, checkLike, getStoryById } from "../controllers/stories.controller";
 import { asyncHandler } from "../middlewares/asyncHandler";
 
 const storyRoute = Router();
@@ -20,4 +20,7 @@ storyRoute.get("/check-like/:storyId", authenticate, asyncHandler(checkLike));
 storyRoute.get("/getLikeStory", authenticate, asyncHandler(getlikeStory));
 
 storyRoute.post("/create", authenticate , asyncHandler(createStory));
+
+// Get story detail by id
+storyRoute.get("/:id", asyncHandler(getStoryById));
 export default storyRoute;

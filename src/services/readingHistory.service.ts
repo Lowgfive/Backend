@@ -33,8 +33,6 @@ export const updateReadingProgressService = async (
 };
 
 export const getLibraryByUserIdService = async (userId: string) => {
-  const keyHistory = `history:${userId}`;
-
 
   const histories = await ReadingHistory.find({ userId })
     .select("storyId lastChapterNumber updatedAt")

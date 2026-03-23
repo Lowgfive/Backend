@@ -1,7 +1,8 @@
 
 
 import { Request, Response, NextFunction } from "express";
-import { createStoryService, getHomeStoriesService, likeStoryService, toggleLikeService, searchStoriesService, checkLikeService } from "../services/stories.service";
+import { createStoryService, getHomeStoriesService, likeStoryService, toggleLikeService, searchStoriesService, checkLikeService, getStoryByIdService } from "../services/stories.service";
+import mongoose from "mongoose";
 
 export const getHomeStories = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).user?.id || (req as any).user?._id;
@@ -75,4 +76,20 @@ export const getStories = async (req: Request, res: Response, next: NextFunction
 
   const result = await searchStoriesService(options as any);
   res.json(result);
+};
+
+// GET /stories/:id  -> story detail
+export const getStoryById = async (req: Request, res: Response, next: NextFunction) => {
+  const { id } = req.params as any;
+
+  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ message: "Invalid story id" });
+  }
+
+  const story = await getStoryByIdService(id);
+  if (!story) {
+    return res.status(404).json({ message: "Story not found" });
+  }
+
+  return res.json(story);
 };

@@ -234,3 +234,12 @@ export const searchStoriesService = async (opts: SearchOptions) => {
 
   return { stories, total, page, limit };
 };
+
+export const getStoryByIdService = async (storyId: string) => {
+  const selectFields =
+    "name image type description likeCount createdDate viewCount status totalChapters userId";
+
+  return await Story.findById(storyId)
+    .select(selectFields)
+    .populate("userId", "username");
+};
