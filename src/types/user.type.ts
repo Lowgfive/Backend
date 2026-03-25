@@ -10,5 +10,6 @@ export type UserType = {
   avatar?: string;
   description : string;
   reading_history?: string[];
+  role?: "user" | "admin";
 };
 

@@ -1,18 +1,59 @@
 import mongoose, { Document, Schema } from "mongoose";
 import { IStory, IStoryLike } from "../types/stories.type";
 
+export const STORY_GENRES = [
+  "Fantasy",
+  "Romance",
+  "Action",
+  "Adventure",
+  "Mystery",
+  "Historical",
+  "Slice of Life",
+  "Urban",
+  "Martial Arts",
+  "Cultivation",
+  "Boys Love",
+  "Girls Love",
+] as const;
 
+const LEGACY_STORY_TYPES = [
+  "Huyá»n Huyá»…n",
+  "Tu TiĂªn",
+  "Äam Má»¹",
+  "BĂ¡ch Há»£p",
+  "ÄĂ´ Thá»‹",
+  "Dá»‹ NÄƒng",
+  "XuyĂªn KhĂ´ng",
+  "Cáº©u Äáº¡o",
+  "Äá»i ThÆ°á»ng",
+  "Lá»‹ch Sá»­",
+  "VĂµng Du",
+];
+
+const STORY_TYPE_OPTIONS = [...new Set([...LEGACY_STORY_TYPES, ...STORY_GENRES])];
 
 const storySchema = new Schema<IStory>(
   {
     name: { type: String, required: true },
     image: { type: String, required: true },
-    type: { type: String, enum : ["Huyền Huyễn", "Tu Tiên", "Đam Mỹ", "Bách Hợp", "Đô Thị", "Dị Năng", "Xuyên Không", "Cẩu Đạo", "Đời Thường", "Lịch Sử", "Võng Du"],  required: true },
+    type: {
+      type: String,
+      enum: STORY_TYPE_OPTIONS,
+      required: true,
+    },
+    title: { type: String, trim: true, default: "" },
+    author: { type: String, trim: true, default: "" },
+    coverImageUrl: { type: String, trim: true, default: "" },
+    genres: {
+      type: [String],
+      enum: STORY_GENRES,
+      default: [],
+    },
     description: { type: String, required: true },
-    userId : {
-      type : mongoose.Schema.Types.ObjectId,
-      require : true,
-      ref : "User"
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      require: true,
+      ref: "User",
     },
     likeCount: {
       type: Number,
@@ -34,10 +75,10 @@ const storySchema = new Schema<IStory>(
       type: Date,
       default: Date.now,
     },
-    totalChapters : {
-      type : Number,
-      default : 0
-    }
+    totalChapters: {
+      type: Number,
+      default: 0,
+    },
   },
   {
     timestamps: true,
@@ -45,8 +86,8 @@ const storySchema = new Schema<IStory>(
   }
 );
 
-
-
+storySchema.index({ title: 1 });
+storySchema.index({ genres: 1 });
 
 const storyLikeSchema = new Schema<IStoryLike>(
   {
@@ -59,7 +100,6 @@ const storyLikeSchema = new Schema<IStoryLike>(
   }
 );
 
-// tránh like trùng
 storyLikeSchema.index({ userId: 1, storyId: 1 }, { unique: true });
 
 export const StoryLike = mongoose.model<IStoryLike>(

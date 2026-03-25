@@ -1,7 +1,10 @@
 import { createClient } from "redis";
 
+// Docker sẽ truyền biến REDIS_URL vào, ví dụ: redis://redis:6379
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+
 export const redisClient = createClient({
-  url: "redis://localhost:6379",
+  url: REDIS_URL,
 });
 
 redisClient.on("error", (err) => {
@@ -10,9 +13,11 @@ redisClient.on("error", (err) => {
 
 export const connectRedis = async () => {
   try {
-    await redisClient.connect();
-    console.log("✅ Redis connected");
+    if (!redisClient.isOpen) {
+      await redisClient.connect();
+      console.log("✅ Redis connected");
+    }
   } catch (error) {
-    console.error("❌ Redis connection failed");
+    console.error("❌ Redis connection failed:", error);
   }
 };

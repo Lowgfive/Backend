@@ -17,6 +17,7 @@ import commentRoute from "./routes/comment.route";
 import moneyRoute from "./routes/money.route";
 import { errorHandler } from "./middlewares/error.middleware";
 import { createMessage } from "./services/chat.service";
+import adminRoute from "./routes/admin.route";
 
 dotenv.config();
 
@@ -44,6 +45,7 @@ app.use("/api/chapters", chaptersRoute);
 app.use("/api/reading-history", readingHistoryRoute);
 app.use("/api/money", moneyRoute);
 app.use("/api/chat", chatRoute);
+app.use("/api/admin", adminRoute);
 
 // error handling middleware should be registered after all routes
 app.use(errorHandler);
@@ -87,7 +89,8 @@ io.on("connection", (socket) => {
   });
 });
 
-httpServer.listen(PORT, () => {
+// Bind all interfaces so devices on the LAN (e.g. Expo) can reach the container.
+httpServer.listen(PORT, "0.0.0.0", () => {
   console.log("=================================");
   console.log(`🚀 Server running on port ${PORT}`);
   console.log("=================================");

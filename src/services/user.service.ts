@@ -29,6 +29,7 @@ export const getUserProfileService = async (
             username: user.username,
             email: user.email,
             avatar: user.avatar || "",
+            role: "user"
         },
         likedStories,
     };

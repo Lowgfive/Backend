@@ -9,6 +9,11 @@ const userSchema = new Schema<UserType>(
     avatar: { type: String, default: "" },
     description : { type: String, default: ""},
     reading_history: { type: [String], default: [] },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
   },
   {
     timestamps: true,

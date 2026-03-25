@@ -6,7 +6,7 @@ import { User } from "../model/user.model";
 import { Money } from "../model/money.model";
 
 export const registerService = async (data: UserType) => {
-  const { email, password, username } = data;
+  const { email, password, username, role = "user" } = data;
 
   const existing = await User.findOne({ email });
   if (existing) throw new Error("Email already exists");
@@ -17,6 +17,7 @@ export const registerService = async (data: UserType) => {
     username,
     email,
     password: hashed,
+    role,
   });
 
   return user;
@@ -37,7 +38,7 @@ export const loginService = async (email: string, password: string) => {
   );
 
   const token = jwt.sign(
-    { id: user._id },
+    { id: user._id, role: user.role || "user" },
     process.env.JWT_SECRET as string,
     { expiresIn: "7d" }
   );
@@ -80,4 +81,4 @@ export const updatePasswordService = async (userId: string, oldPassword: string,
   await user.save();
 
   return true;
-};
+};

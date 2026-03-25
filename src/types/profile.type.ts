@@ -6,6 +6,7 @@ export type UserProfileResponse = {
         username: string;
         email: string;
         avatar: string;
+        role: "user" | "admin";
     };
     likedStories: IStory[];
 };

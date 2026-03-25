@@ -4,6 +4,10 @@ export interface IStory extends Document {
   name: string;
   image: string;
   type: string;
+  title?: string;
+  author?: string;
+  coverImageUrl?: string;
+  genres?: string[];
   description: string;
   userId : Types.ObjectId;
   likeCount: number;
