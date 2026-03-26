@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import cors from "cors";
+import path from "path";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { connectDB } from "./config/db";
@@ -18,8 +19,10 @@ import moneyRoute from "./routes/money.route";
 import { errorHandler } from "./middlewares/error.middleware";
 import { createMessage } from "./services/chat.service";
 import adminRoute from "./routes/admin.route";
+import paymentsRoute from "./routes/payments.route";
 
 dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 const app = express();
 
@@ -46,6 +49,7 @@ app.use("/api/reading-history", readingHistoryRoute);
 app.use("/api/money", moneyRoute);
 app.use("/api/chat", chatRoute);
 app.use("/api/admin", adminRoute);
+app.use("/api/v1/payments", paymentsRoute);
 
 // error handling middleware should be registered after all routes
 app.use(errorHandler);

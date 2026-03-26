@@ -23,6 +23,16 @@ const TransactionSchema = new Schema<ITransaction>(
       enum: ["unlock_chapter", "topup", "event", "admin"],
       required: true
     },
+    provider: {
+      type: String,
+      enum: ["vnpay"]
+    },
+    paymentRef: {
+      type: String
+    },
+    metadata: {
+      type: Schema.Types.Mixed
+    },
     storyId: {
       type: Schema.Types.ObjectId,
       ref: "Story"

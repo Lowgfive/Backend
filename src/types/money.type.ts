@@ -12,6 +12,9 @@ export type ITransaction = {
   source: "unlock_chapter" | "topup" | "event" | "admin";
   storyId?: Types.ObjectId;
   chapterId?: Types.ObjectId;
+  provider?: "vnpay";
+  paymentRef?: string;
+  metadata?: Record<string, unknown>;
 };
 
 export type IUnlockedChapter = {
