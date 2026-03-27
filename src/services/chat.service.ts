@@ -12,6 +12,6 @@ export const getMessagesByRoom = async (roomId: string) => {
     .sort({ createdAt: 1 })
     .limit(50)
     .lean();
-
+    console.log(messages)
   return messages;
 };

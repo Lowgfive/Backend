@@ -9,6 +9,7 @@ export type UserType = {
   password: string;
   avatar?: string;
   description : string;
+  language?: "en" | "vi";
   reading_history?: string[];
   role?: "user" | "admin";
 };

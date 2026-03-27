@@ -8,6 +8,11 @@ const userSchema = new Schema<UserType>(
     password: { type: String, required: true },
     avatar: { type: String, default: "" },
     description : { type: String, default: ""},
+    language: {
+      type: String,
+      enum: ["en", "vi"],
+      default: "vi",
+    },
     reading_history: { type: [String], default: [] },
     role: {
       type: String,

@@ -3,6 +3,7 @@ import {
   createCommentService,
   getCommentsByChapterIdService,
 } from "../services/comment.service";
+import { AppError } from "../utils/app-error";
 
 export const getCommentsByChapterId = async (
   req: Request,
@@ -12,7 +13,7 @@ export const getCommentsByChapterId = async (
   const chapterId = req.query.chapterId as string;
 
   if (!chapterId) {
-    return res.status(400).json({ message: "chapterId is required" });
+    throw new AppError(400, "CHAPTER_ID_REQUIRED", "chapter.chapterIdRequired", "chapterId is required");
   }
 
   const comments = await getCommentsByChapterIdService(chapterId);
@@ -28,9 +29,9 @@ export const createCommentController = async (
   const userId = (req as any).user.id;
 
   if (!content || !chapterId) {
-    return res.status(400).json({ message: "content and chapterId are required" });
+    throw new AppError(400, "COMMENT_REQUIRED_FIELDS", "comment.requiredFields", "content and chapterId are required");
   }
-  console.log(userId,content , chapterId)
+
   const comment = await createCommentService({
     content,
     userId,

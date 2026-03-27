@@ -1,22 +1,20 @@
 import { NextFunction, Request, Response } from "express";
-import { Chapter } from "../model/chapter.model";
 import { Money } from "../model/money.model";
 import { Transaction } from "../model/transaction.model";
-import mongoose from "mongoose";
 import { UnlockedChapter } from "../model/unlockChapter.model";
 import { redisClient } from "../config/redis";
+import { AppError } from "../utils/app-error";
+import { sendSuccess } from "../utils/api-response";
+
 const BASE_PRICE = 50;
 
-
-    export const unlockChapterController = async (req: Request, res: Response, next: NextFunction) => {
+export const unlockChapterController = async (req: Request, res: Response, next: NextFunction) => {
   try {
-
     const { chapterId, storyId } = req.body;
     const userId = (req as any).user?.id || (req as any).user?._id;
 
-    if(!userId || !chapterId || !storyId) {
- 
-        return res.status(400).json({ message: "Missing required parameters" });
+    if (!userId || !chapterId || !storyId) {
+      throw new AppError(400, "UNLOCK_REQUIRED_FIELDS", "chapterUnlock.requiredFields", "Missing required parameters");
     }
 
     await Money.findOneAndUpdate(
@@ -31,23 +29,17 @@ const BASE_PRICE = 50;
     });
 
     if (existed) {
-      return res.status(400).json({
-        message: "Chapter already unlocked"
-      });
+      throw new AppError(400, "CHAPTER_ALREADY_UNLOCKED", "chapterUnlock.alreadyUnlocked", "Chapter already unlocked");
     }
 
-    // kiểm tra số dư hiện tại
     const currentMoney = await Money.findOne({ userId });
     console.log(`[UnlockChapter] Current balance: ${currentMoney?.balance}`);
 
     if (!currentMoney || currentMoney.balance < BASE_PRICE) {
-         console.log(`[UnlockChapter] Not enough balance: ${currentMoney?.balance} < ${BASE_PRICE}`);
-         return res.status(400).json({
-            message: "Not enough balance to unlock chapter"
-         });
+      console.log(`[UnlockChapter] Not enough balance: ${currentMoney?.balance} < ${BASE_PRICE}`);
+      throw new AppError(400, "BALANCE_INSUFFICIENT", "wallet.insufficientBalance", "Not enough balance to unlock chapter");
     }
 
-    // trừ tiền atomic
     const wallet = await Money.findOneAndUpdate(
       { userId, balance: { $gte: BASE_PRICE } },
       { $inc: { balance: -BASE_PRICE } },
@@ -55,23 +47,16 @@ const BASE_PRICE = 50;
     );
 
     if (!wallet) {
-      return res.status(400).json({
-        message: "Not enough balance to unlock chapter"
-      });
+      throw new AppError(400, "BALANCE_INSUFFICIENT", "wallet.insufficientBalance", "Not enough balance to unlock chapter");
     }
 
     try {
-
-      // lưu unlock
       await UnlockedChapter.create({
         userId,
         storyId,
         chapterId
       });
-
     } catch (err) {
-
-      // rollback tiền nếu unlock lỗi
       await Money.updateOne(
         { userId },
         { $inc: { balance: BASE_PRICE } }
@@ -89,14 +74,13 @@ const BASE_PRICE = 50;
       chapterId
     });
 
-    // Invalidate the cache for this user's chapter list
     const keyChapter = `listChapters:${storyId}:${userId}`;
     await redisClient.del(keyChapter);
 
-    res.json({
-      message: "Unlock success"
+    return sendSuccess(res, 200, {
+      code: "CHAPTER_UNLOCK_SUCCESS",
+      messageKey: "chapterUnlock.success",
     });
-
   } catch (err) {
     console.error(`[UnlockChapter] Uncaught Error:`, err);
     next(err);
@@ -119,4 +103,3 @@ export const getBalanceController = async (req: Request, res: Response, next: Ne
     next(err);
   }
 };
-

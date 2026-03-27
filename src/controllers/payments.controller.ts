@@ -6,6 +6,8 @@ import {
   handleVnpayReturn,
   validateTopupAmount,
 } from "../services/payment.service";
+import { AppError } from "../utils/app-error";
+import { sendSuccess } from "../utils/api-response";
 
 export const getTopupPackagesController = (_req: Request, res: Response) => {
   res.json({
@@ -25,11 +27,11 @@ export const createVnpayPaymentController = async (
     const validation = validateTopupAmount(amount);
 
     if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      throw new AppError(401, "AUTH_UNAUTHORIZED", "auth.unauthorized", "Unauthorized");
     }
 
     if (!validation.valid) {
-      return res.status(400).json({ message: validation.message });
+      throw new AppError(400, validation.code, validation.messageKey, validation.message);
     }
 
     const forwardedFor = req.headers["x-forwarded-for"];
@@ -44,9 +46,10 @@ export const createVnpayPaymentController = async (
       ipAddr,
     });
 
-    res.json({
-      message: "Tao URL thanh toan thanh cong.",
-      ...data,
+    return sendSuccess(res, 200, {
+      code: "PAYMENT_URL_CREATE_SUCCESS",
+      messageKey: "payments.createUrlSuccess",
+      data,
     });
   } catch (err) {
     next(err);

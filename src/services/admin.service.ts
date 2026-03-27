@@ -3,9 +3,20 @@ import { Comment } from "../model/comment.model";
 import { Story } from "../model/stories.model";
 import { UnlockedChapter } from "../model/unlockChapter.model";
 import { User } from "../model/user.model";
+import { AppError } from "../utils/app-error";
 
 type CreateAdminStoryInput = {
   adminId: string;
+  title: string;
+  author: string;
+  description?: string;
+  coverImageUrl?: string;
+  status: "ongoing" | "completed";
+  genres: string[];
+};
+
+type UpdateAdminStoryInput = {
+  storyId: string;
   title: string;
   author: string;
   description?: string;
@@ -25,7 +36,7 @@ export const getDashboardStatsService = async () => {
         {
           $group: {
             _id: "$storyId",
-            totalUnlocked: { $sum: 1 },
+            totalUnlocked: { $sum: 1 }
           },
         },
         {
@@ -59,7 +70,7 @@ export const getDashboardStatsService = async () => {
         },
       ]),
     ]);
-
+    console.log(revenue + "so du")
   return {
     totalStories,
     totalChapters,
@@ -67,6 +78,13 @@ export const getDashboardStatsService = async () => {
     totalUsers,
     revenue,
   };
+};
+
+export const getAdminStoriesService = async () => {
+  return await Story.find()
+    .sort({ createdDate: -1 })
+    .select("title name author description coverImageUrl image status genres viewCount totalChapters createdDate")
+    .lean();
 };
 
 export const createAdminStoryService = async ({
@@ -87,9 +105,7 @@ export const createAdminStoryService = async ({
   }).lean();
 
   if (existingStory) {
-    const error = new Error("Story title already exists");
-    (error as any).status = 409;
-    throw error;
+    throw new AppError(409, "STORY_TITLE_EXISTS", "story.titleExists", "Story title already exists");
   }
 
   return Story.create({
@@ -101,7 +117,52 @@ export const createAdminStoryService = async ({
     genres: normalizedGenres,
     name: normalizedTitle,
     image: coverImageUrl.trim() || "https://placehold.co/600x900?text=Storytime",
-    type: normalizedGenres[0] || "Huyá»n Huyá»…n",
+    type: normalizedGenres[0] || "Fantasy",
     userId: adminId,
   });
+};
+
+export const updateAdminStoryService = async ({
+  storyId,
+  title,
+  author,
+  description = "",
+  coverImageUrl = "",
+  status,
+  genres,
+}: UpdateAdminStoryInput) => {
+  const normalizedTitle = title.trim();
+  const normalizedAuthor = author.trim();
+  const normalizedGenres = [...new Set(genres.map((genre) => genre.trim()).filter(Boolean))];
+
+  const existingStory = await Story.findOne({
+    _id: { $ne: storyId },
+    $or: [{ title: normalizedTitle }, { name: normalizedTitle }],
+  }).lean();
+
+  if (existingStory) {
+    throw new AppError(409, "STORY_TITLE_EXISTS", "story.titleExists", "Story title already exists");
+  }
+
+  const updatedStory = await Story.findByIdAndUpdate(
+    storyId,
+    {
+      title: normalizedTitle,
+      author: normalizedAuthor,
+      description: description.trim(),
+      coverImageUrl: coverImageUrl.trim(),
+      status: status === "completed" ? "Completed" : "Ongoing",
+      genres: normalizedGenres,
+      name: normalizedTitle,
+      image: coverImageUrl.trim() || "https://placehold.co/600x900?text=Storytime",
+      type: normalizedGenres[0] || "Fantasy",
+    },
+    { new: true }
+  );
+
+  if (!updatedStory) {
+    throw new AppError(404, "STORY_NOT_FOUND", "story.notFound", "Story not found");
+  }
+
+  return updatedStory;
 };

@@ -21,6 +21,7 @@ type VnpayReturnResult = {
   success: boolean;
   code: string;
   message: string;
+  messageKey: string;
   amount: number;
   stones: number;
   paymentRef: string;
@@ -42,14 +43,21 @@ const getEnvConfig = () => ({
 
 const pad = (value: number) => value.toString().padStart(2, "0");
 
+const toVietnamTime = (date: Date) => {
+  const utcTime = date.getTime() + date.getTimezoneOffset() * 60 * 1000;
+  return new Date(utcTime + 7 * 60 * 60 * 1000);
+};
+
 const formatVnpDate = (date: Date) => {
+  const vietnamDate = toVietnamTime(date);
+
   return [
-    date.getFullYear(),
-    pad(date.getMonth() + 1),
-    pad(date.getDate()),
-    pad(date.getHours()),
-    pad(date.getMinutes()),
-    pad(date.getSeconds()),
+    vietnamDate.getFullYear(),
+    pad(vietnamDate.getMonth() + 1),
+    pad(vietnamDate.getDate()),
+    pad(vietnamDate.getHours()),
+    pad(vietnamDate.getMinutes()),
+    pad(vietnamDate.getSeconds()),
   ].join("");
 };
 
@@ -93,6 +101,8 @@ export const validateTopupAmount = (amount: number) => {
   if (!Number.isFinite(amount) || amount < VND_PER_STONE_BLOCK) {
     return {
       valid: false,
+      code: "TOPUP_AMOUNT_TOO_LOW",
+      messageKey: "payments.topupAmountTooLow",
       message: "So tien nap toi thieu la 1,000 VND.",
     };
   }
@@ -100,11 +110,13 @@ export const validateTopupAmount = (amount: number) => {
   if (amount % VND_PER_STONE_BLOCK !== 0) {
     return {
       valid: false,
+      code: "TOPUP_AMOUNT_INVALID_STEP",
+      messageKey: "payments.topupAmountInvalidStep",
       message: "So tien nap phai chia het cho 1,000 VND.",
     };
   }
 
-  return { valid: true, message: "" };
+  return { valid: true, code: "", messageKey: "", message: "" };
 };
 
 export const createVnpayPaymentUrl = ({ userId, amount, ipAddr }: CreatePaymentInput) => {
@@ -178,6 +190,7 @@ export const handleVnpayReturn = async (
     return {
       success: false,
       code: "97",
+      messageKey: "payments.invalidSignature",
       message: "Chu ky khong hop le.",
       amount,
       stones,
@@ -189,6 +202,7 @@ export const handleVnpayReturn = async (
     return {
       success: false,
       code: responseCode || "99",
+      messageKey: "payments.failedOrCancelled",
       message: "Thanh toan that bai hoac bi huy.",
       amount,
       stones,
@@ -200,6 +214,7 @@ export const handleVnpayReturn = async (
     return {
       success: false,
       code: "99",
+      messageKey: "payments.userNotResolved",
       message: "Khong xac dinh duoc nguoi dung cua giao dich.",
       amount,
       stones,
@@ -219,6 +234,7 @@ export const handleVnpayReturn = async (
     return {
       success: true,
       code: responseCode,
+      messageKey: "payments.alreadyProcessed",
       message: "Giao dich da duoc xu ly truoc do.",
       amount,
       stones,
@@ -261,6 +277,7 @@ export const handleVnpayReturn = async (
   return {
     success: true,
     code: responseCode,
+    messageKey: "payments.topupSuccess",
     message: "Nap tien thanh cong.",
     amount,
     stones,

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import { AppError } from "../utils/app-error";
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -10,10 +11,13 @@ export const authenticate = (
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.header("Authorization")
+  const authHeader = req.header("Authorization");
 
-  if (!authHeader)
-    return res.status(401).json({ message: "No token provided" });
+  if (!authHeader) {
+    return next(
+      new AppError(401, "AUTH_TOKEN_MISSING", "auth.tokenMissing", "No token provided")
+    );
+  }
 
   const token = authHeader.split(" ")[1];
 
@@ -26,10 +30,10 @@ export const authenticate = (
     req.user = decoded;
     next();
   } catch {
-    res.status(401).json({ message: "Invalid token" });
+    next(
+      new AppError(401, "AUTH_TOKEN_INVALID", "auth.tokenInvalid", "Invalid token")
+    );
   }
 };
 
 export const authMiddleware = authenticate;
-
-

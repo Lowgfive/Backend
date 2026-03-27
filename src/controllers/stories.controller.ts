@@ -1,8 +1,8 @@
-
-
 import { Request, Response, NextFunction } from "express";
 import { createStoryService, getHomeStoriesService, likeStoryService, toggleLikeService, searchStoriesService, checkLikeService, getStoryByIdService } from "../services/stories.service";
 import mongoose from "mongoose";
+import { AppError } from "../utils/app-error";
+import { sendSuccess } from "../utils/api-response";
 
 export const getHomeStories = async (req: Request, res: Response, next: NextFunction) => {
   const userId = (req as any).user?.id || (req as any).user?._id;
@@ -18,8 +18,9 @@ export const toggleLike = async (req: Request, res: Response, next: NextFunction
 
   const result = await toggleLikeService(userId, storyId);
 
-  res.json({
-    message: result.liked ? "Liked story" : "Unliked story",
+  return sendSuccess(res, 200, {
+    code: result.liked ? "STORY_LIKED" : "STORY_UNLIKED",
+    messageKey: result.liked ? "story.liked" : "story.unliked",
     liked: result.liked,
   });
 };
@@ -29,11 +30,10 @@ export const checkLike = async (req: Request, res: Response, next: NextFunction)
   const { storyId } = (req as any).params;
 
   if (!storyId) {
-    return res.status(400).json({ message: "storyId is required" });
+    throw new AppError(400, "STORY_ID_REQUIRED", "story.storyIdRequired", "storyId is required");
   }
 
   const isLiked = await checkLikeService(userId, storyId);
-       console.log("isLiked", isLiked)
   res.json({
     liked: isLiked
   });
@@ -50,11 +50,13 @@ export const createStory = async (req: Request, res: Response, next: NextFunctio
   const userId = (req as any).user.id;
   const insertStory = await createStoryService(userId, name, image, type, description);
   if (insertStory) {
-    return res.status(200).json({ message: "Tạo thành công!" });
+    return sendSuccess(res, 200, {
+      code: "STORY_CREATE_SUCCESS",
+      messageKey: "story.createSuccess",
+    });
   }
 };
 
-// GET /stories  -> search/filter list
 export const getStories = async (req: Request, res: Response, next: NextFunction) => {
   const {
     q,
@@ -78,17 +80,16 @@ export const getStories = async (req: Request, res: Response, next: NextFunction
   res.json(result);
 };
 
-// GET /stories/:id  -> story detail
 export const getStoryById = async (req: Request, res: Response, next: NextFunction) => {
   const { id } = req.params as any;
 
   if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-    return res.status(400).json({ message: "Invalid story id" });
+    throw new AppError(400, "STORY_ID_INVALID", "story.storyIdInvalid", "Invalid story id");
   }
 
   const story = await getStoryByIdService(id);
   if (!story) {
-    return res.status(404).json({ message: "Story not found" });
+    throw new AppError(404, "STORY_NOT_FOUND", "story.notFound", "Story not found");
   }
 
   return res.json(story);

@@ -1,27 +1,30 @@
 import { Request, Response, NextFunction } from "express";
 import { updateReadingProgressService, getLibraryByUserIdService } from "../services/readingHistory.service";
 import { AuthRequest } from "../middlewares/auth.middleware";
+import { AppError } from "../utils/app-error";
+import { sendSuccess } from "../utils/api-response";
 
 export const updateReadingHistory = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  const userId = req.user?.id || req.user?._id; // Ensure it gets the authenticated user's ID
+  const userId = req.user?.id || req.user?._id;
   const { storyId, chapterId, chapterNumber } = req.body;
 
   if (!userId) {
-    return res.status(401).json({ message: "Unauthorized" });
+    throw new AppError(401, "AUTH_UNAUTHORIZED", "auth.unauthorized", "Unauthorized");
   }
 
   if (!storyId || !chapterId || chapterNumber === undefined) {
-    return res.status(400).json({ message: "storyId, chapterId, and chapterNumber are required" });
+    throw new AppError(400, "READING_HISTORY_REQUIRED_FIELDS", "readingHistory.requiredFields", "storyId, chapterId, and chapterNumber are required");
   }
 
   const num = parseFloat(chapterNumber);
   if (isNaN(num)) {
-    return res.status(400).json({ message: "Invalid chapterNumber" });
+    throw new AppError(400, "CHAPTER_NUMBER_INVALID", "chapter.chapterNumberInvalid", "Invalid chapterNumber");
   }
 
   const updatedLog = await updateReadingProgressService(userId, storyId, chapterId, num);
-  res.status(200).json({
-    message: "Reading progress updated successfully",
+  return sendSuccess(res, 200, {
+    code: "READING_HISTORY_UPDATE_SUCCESS",
+    messageKey: "readingHistory.updateSuccess",
     data: updatedLog,
   });
 };

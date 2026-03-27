@@ -8,7 +8,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { connectDB } from "./config/db";
 import authRoute from "./routes/auth.route";
 import storyRoute from "./routes/stories.route";
-import userRoute from "./routes/user.route";
+
 import chaptersRoute from "./routes/chapters.route";
 import readingHistoryRoute from "./routes/readingHistory.route";
 import chatRoute from "./routes/chat.route";
@@ -43,7 +43,7 @@ app.use(morgan("dev"));
 app.use("/api", commentRoute);
 app.use("/api/auth", authRoute);
 app.use("/api/stories", storyRoute);
-app.use("/api/user", userRoute);
+
 app.use("/api/chapters", chaptersRoute);
 app.use("/api/reading-history", readingHistoryRoute);
 app.use("/api/money", moneyRoute);

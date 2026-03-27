@@ -1,109 +1,90 @@
 import { Request, Response, NextFunction } from "express";
-import { 
-  registerService, 
-  loginService, 
-  getUserProfileService, 
-  updateProfileService, 
-  updateAvatarService, 
-  updatePasswordService 
+import {
+  registerService,
+  loginService,
+  getUserProfileService,
+  updateProfileService,
+  updateAvatarService,
+  updatePasswordService
 } from "../services/auth.service";
+import { sendSuccess } from "../utils/api-response";
+import { AppError } from "../utils/app-error";
 
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   const user = await registerService(req.body);
-  res.status(201).json(user);
+  return sendSuccess(res, 201, {
+    code: "AUTH_REGISTER_SUCCESS",
+    messageKey: "auth.registerSuccess",
+    data: user,
+  });
 };
 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   const result = await loginService(req.body.email, req.body.password);
-  res.status(200).json(result);
+  return sendSuccess(res, 200, {
+    code: "AUTH_LOGIN_SUCCESS",
+    messageKey: "auth.loginSuccess",
+    data: result,
+  });
 };
 
 export const getProfile = async (req: Request, res: Response, next: NextFunction) => {
-  // middleware authenticate nên đã gán req.user
   const userId = (req as any).user.id;
-
   const user = await getUserProfileService(userId);
 
   if (!user) {
-    return res.status(404).json({ message: "Người dùng không tồn tại" });
+    throw new AppError(404, "USER_NOT_FOUND", "user.notFound", "User not found");
   }
 
-  res.status(200).json({
-    message: "Lấy thông tin profile thành công",
-    user
+  return sendSuccess(res, 200, {
+    code: "AUTH_PROFILE_FETCH_SUCCESS",
+    messageKey: "auth.profileFetchSuccess",
+    user,
   });
 };
 
 export const updateProfile = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = (req as any).user.id;
-    const { username, description, email } = req.body;
+  const userId = (req as any).user.id;
+  const { username, description, email, language } = req.body;
+  const user = await updateProfileService(userId, username, description, email, language);
 
-    const user = await updateProfileService(userId, username, description, email);
-
-    res.status(200).json({
-      success: true,
-      message: "Cập nhật thông tin thành công",
-      data: user
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
-  }
+  return sendSuccess(res, 200, {
+    code: "AUTH_PROFILE_UPDATE_SUCCESS",
+    messageKey: "auth.profileUpdateSuccess",
+    data: user,
+  });
 };
 
 export const updateAvatar = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = (req as any).user.id;
-    const { avatar } = req.body;
+  const userId = (req as any).user.id;
+  const { avatar } = req.body;
 
-    if (!avatar) {
-      return res.status(400).json({
-        success: false,
-        message: "URL avatar là bắt buộc"
-      });
-    }
-
-    const user = await updateAvatarService(userId, avatar);
-
-    res.status(200).json({
-      success: true,
-      message: "Cập nhật ảnh đại diện thành công",
-      data: user
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+  if (!avatar) {
+    throw new AppError(400, "AUTH_AVATAR_REQUIRED", "auth.avatarRequired", "Avatar URL is required");
   }
+
+  const user = await updateAvatarService(userId, avatar);
+
+  return sendSuccess(res, 200, {
+    code: "AUTH_AVATAR_UPDATE_SUCCESS",
+    messageKey: "auth.avatarUpdateSuccess",
+    data: user,
+  });
 };
 
 export const updatePassword = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const userId = (req as any).user.id;
-    const { oldPassword, newPassword } = req.body;
+  const userId = (req as any).user.id;
+  const { oldPassword, newPassword } = req.body;
 
-    if (!oldPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: "Vui lòng cung cấp mật khẩu cũ và mới"
-      });
-    }
-
-    await updatePasswordService(userId, oldPassword, newPassword);
-
-    res.status(200).json({
-      success: true,
-      message: "Đổi mật khẩu thành công",
-      data: null
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+  if (!oldPassword || !newPassword) {
+    throw new AppError(400, "AUTH_PASSWORD_INPUT_REQUIRED", "auth.passwordInputRequired", "Old and new passwords are required");
   }
+
+  await updatePasswordService(userId, oldPassword, newPassword);
+
+  return sendSuccess(res, 200, {
+    code: "AUTH_PASSWORD_UPDATE_SUCCESS",
+    messageKey: "auth.passwordUpdateSuccess",
+    data: null,
+  });
 };
