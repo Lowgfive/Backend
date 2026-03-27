@@ -58,7 +58,7 @@ export const readChapterAndPreloadService = async (storyId: string, chapterNumbe
     const key = `Chapter:${storyId}:${chapterNumber}`
     const viewCount = `View${storyId}:${chapterNumber}`
     const newView = await redisClient.set(viewCount, 1, { EX: 600, NX: true })
-
+    console.log(viewCount +" "+ newView)
     if (newView) {
         console.log("da tang view")
         await Story.findByIdAndUpdate(storyId, { $inc: { viewCount: 1 } })

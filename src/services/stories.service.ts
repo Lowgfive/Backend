@@ -5,7 +5,7 @@ import { User } from "../model/user.model";
 import { redisClient } from "../config/redis";
 
 export const getHomeStoriesService = async (userId?: string, limit: number = 5) => {
-  const selectFields = "name image type description likeCount createdDate viewCount status";
+  const selectFields = "name image type description likeCount createdDate viewCount status author";
   const cacheKey = `home:${userId || "guest"}:${limit}`;
 
   // 1. Check cache
@@ -68,7 +68,7 @@ export const getHomeStoriesService = async (userId?: string, limit: number = 5) 
     // Fallback if no types exist
     recommended = await Story.aggregate([
       { $sample: { size: limit } },
-      { $project: { name: 1, image: 1, type: 1, description: 1, likeCount: 1, createdDate: 1, viewCount: 1, status: 1 } }
+      { $project: { name: 1, image: 1, type: 1, description: 1, likeCount: 1, createdDate: 1, viewCount: 1, status: 1, author: 1 } }
     ]);
   }
   const result = {
@@ -220,7 +220,7 @@ export const searchStoriesService = async (opts: SearchOptions) => {
   }
 
   const skip = (page - 1) * limit;
-  const selectFields = "name image type description likeCount createdDate viewCount status";
+  const selectFields = "name image type description likeCount createdDate viewCount status author";
 
   const [stories, total] = await Promise.all([
     Story.find(filter)
@@ -237,7 +237,7 @@ export const searchStoriesService = async (opts: SearchOptions) => {
 
 export const getStoryByIdService = async (storyId: string) => {
   const selectFields =
-    "name image type description likeCount createdDate viewCount status totalChapters userId";
+    "name image type description likeCount createdDate viewCount status totalChapters userId author";
 
   return await Story.findById(storyId)
     .select(selectFields)

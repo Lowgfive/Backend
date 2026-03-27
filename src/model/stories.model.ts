@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Schema } from "mongoose";
 import { IStory, IStoryLike } from "../types/stories.type";
 
 export const STORY_GENRES = [
@@ -17,17 +17,17 @@ export const STORY_GENRES = [
 ] as const;
 
 const LEGACY_STORY_TYPES = [
-  "Huyá»n Huyá»…n",
-  "Tu TiĂªn",
-  "Äam Má»¹",
-  "BĂ¡ch Há»£p",
-  "ÄĂ´ Thá»‹",
-  "Dá»‹ NÄƒng",
-  "XuyĂªn KhĂ´ng",
-  "Cáº©u Äáº¡o",
-  "Äá»i ThÆ°á»ng",
-  "Lá»‹ch Sá»­",
-  "VĂµng Du",
+  "Huyền Huyễn",
+  "Tu Tiên",
+  "Đam Mỹ",
+  "Bách Hợp",
+  "Đô Thị",
+  "Dị Năng",
+  "Xuyên Không",
+  "Cẩu Đạo",
+  "Đời Thường",
+  "Lịch Sử",
+  "Võng Du",
 ];
 
 const STORY_TYPE_OPTIONS = [...new Set([...LEGACY_STORY_TYPES, ...STORY_GENRES])];

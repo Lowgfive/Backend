@@ -65,9 +65,7 @@ export const getLibraryByUserIdService = async (userId: string) => {
           likeCount: story.likeCount,
           viewCount: story.viewCount,
           totalChapters: story.totalChapters,
-          author: {
-            name: authorUser?.username ?? "",
-          },
+          author: story.author || authorUser?.username || "",
         },
         lastChapterNumber: item.lastChapterNumber,
         updatedAt: item.updatedAt,
