@@ -41,6 +41,17 @@ const getEnvConfig = () => ({
     process.env.VNP_FRONTEND_RETURN_URL || "appreading://topup",
 });
 
+export const getPaymentDebugConfig = () => {
+  const { tmnCode, vnpUrl, returnUrl, frontendReturnUrl } = getEnvConfig();
+
+  return {
+    tmnCode,
+    vnpUrl,
+    returnUrl,
+    frontendReturnUrl,
+  };
+};
+
 const pad = (value: number) => value.toString().padStart(2, "0");
 
 const toVietnamTime = (date: Date) => {
@@ -186,7 +197,21 @@ export const handleVnpayReturn = async (
   const orderInfo = rawParams.vnp_OrderInfo || "";
   const userId = orderInfo.split("_")[1] || "";
 
+  console.log("[VNPay Return] Raw params:", {
+    paymentRef,
+    responseCode,
+    amount,
+    orderInfo,
+    hasSecureHash: Boolean(secureHash),
+  });
+
   if (!secureHash || secureHash !== expectedHash) {
+    console.error("[VNPay Return] Invalid signature", {
+      paymentRef,
+      responseCode,
+      secureHash,
+      expectedHash,
+    });
     return {
       success: false,
       code: "97",
@@ -199,6 +224,12 @@ export const handleVnpayReturn = async (
   }
 
   if (responseCode !== "00") {
+    console.error("[VNPay Return] Payment failed or cancelled", {
+      paymentRef,
+      responseCode,
+      amount,
+      orderInfo,
+    });
     return {
       success: false,
       code: responseCode || "99",
@@ -211,6 +242,11 @@ export const handleVnpayReturn = async (
   }
 
   if (!userId) {
+    console.error("[VNPay Return] User could not be resolved", {
+      paymentRef,
+      orderInfo,
+      amount,
+    });
     return {
       success: false,
       code: "99",
@@ -304,6 +340,7 @@ export const buildTopupReturnHtml = (result: VnpayReturnResult) => {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="refresh" content="1;url=${redirectUrl}" />
   <title>${title}</title>
   <style>
     body { font-family: Arial, sans-serif; background: #101418; color: #f7f7f7; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
@@ -314,7 +351,24 @@ export const buildTopupReturnHtml = (result: VnpayReturnResult) => {
     a { display: inline-block; margin-top: 18px; color: #111; background: #e08a2a; text-decoration: none; font-weight: 700; padding: 12px 18px; border-radius: 12px; }
   </style>
   <script>
-    setTimeout(function () { window.location.href = "${redirectUrl}"; }, 1200);
+    (function () {
+      var redirectUrl = "${redirectUrl}";
+      var hasRedirected = false;
+
+      function tryRedirect() {
+        if (hasRedirected) return;
+        hasRedirected = true;
+        window.location.replace(redirectUrl);
+      }
+
+      window.onload = function () {
+        tryRedirect();
+      };
+
+      setTimeout(tryRedirect, 300);
+      setTimeout(tryRedirect, 1000);
+      setTimeout(tryRedirect, 1800);
+    })();
   </script>
 </head>
 <body>
@@ -322,6 +376,7 @@ export const buildTopupReturnHtml = (result: VnpayReturnResult) => {
     <span class="badge">${result.success ? "SUCCESS" : "FAILED"}</span>
     <h1>${title}</h1>
     <p>${description}</p>
+    <p>Ung dung se tu dong mo lai trong giay lat.</p>
     <p>Ma giao dich: ${result.paymentRef || "N/A"}</p>
     <a href="${redirectUrl}">Quay lai ung dung</a>
   </div>

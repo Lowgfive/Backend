@@ -2,7 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import { AppError } from "../utils/app-error";
 
 export function errorHandler(err: any, req: Request, res: Response, next: NextFunction) {
-    console.error(err);
+    console.error("[Backend Error]", {
+        method: req.method,
+        path: req.originalUrl,
+        status: err?.status || 500,
+        code: err?.code || "INTERNAL_SERVER_ERROR",
+        message: err?.message || "Internal Server Error",
+        stack: err?.stack,
+    });
 
     const isAppError = err instanceof AppError;
     const status = isAppError ? err.status : err.status || 500;
