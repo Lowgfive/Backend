@@ -10,6 +10,11 @@ const CACHE_TTL = 3600; // 1 hour
 
 // 1. API: Lấy Danh Mục Truyện (Loại bỏ content để tiết kiệm băng thông)
 export const getStoryChaptersListService = async (storyId: string, userId: string) => {
+    const story = await Story.findOne({ _id: storyId, isPublic: { $ne: false } }).select("_id");
+    if (!story) {
+        return null;
+    }
+
     const keyChapter = `listChapters:${storyId}:${userId || 'guest'}`
     const cache = await redisClient.get(keyChapter);
 
@@ -55,6 +60,11 @@ const triggerBackgroundPrefetching = async (storyId: string, currentChapterNumbe
 
 // 2. Lấy 1 Chương và Tự Động Kích Hoạt Nạp Trước
 export const readChapterAndPreloadService = async (storyId: string, chapterNumber: number) => {
+    const story = await Story.findOne({ _id: storyId, isPublic: { $ne: false } }).select("_id");
+    if (!story) {
+        return null;
+    }
+
     const key = `Chapter:${storyId}:${chapterNumber}`
     const viewCount = `View${storyId}:${chapterNumber}`
     const newView = await redisClient.set(viewCount, 1, { EX: 600, NX: true })

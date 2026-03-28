@@ -7,6 +7,7 @@ import { redisClient } from "../config/redis";
 export const getHomeStoriesService = async (userId?: string, limit: number = 5) => {
   const selectFields = "name image type description likeCount createdDate viewCount status author";
   const cacheKey = `home:${userId || "guest"}:${limit}`;
+  const publicFilter = { isPublic: { $ne: false } };
 
   // 1. Check cache
   const cached = await redisClient.get(cacheKey);
@@ -15,19 +16,19 @@ export const getHomeStoriesService = async (userId?: string, limit: number = 5) 
   }
 
   const [topLiked, newest, topViewed] = await Promise.all([
-    Story.find()
+    Story.find(publicFilter)
       .sort({ likeCount: -1 })
       .limit(limit)
       .select(selectFields)
       .populate("userId", "username"),
 
-    Story.find()
+    Story.find(publicFilter)
       .sort({ createdDate: -1 })
       .limit(limit)
       .select(selectFields)
       .populate("userId", "username"),
 
-    Story.find()
+    Story.find(publicFilter)
       .sort({ viewCount: -1 })
       .limit(limit)
       .select(selectFields)
@@ -51,7 +52,7 @@ export const getHomeStoriesService = async (userId?: string, limit: number = 5) 
   }
 
   if (!recommendedType) {
-    const distinctTypes = await Story.distinct("type");
+    const distinctTypes = await Story.distinct("type", publicFilter);
     if (distinctTypes.length > 0) {
       const randomIndex = Math.floor(Math.random() * distinctTypes.length);
       recommendedType = distinctTypes[randomIndex];
@@ -60,13 +61,14 @@ export const getHomeStoriesService = async (userId?: string, limit: number = 5) 
 
   let recommended = [];
   if (recommendedType) {
-    recommended = await Story.find({ type: recommendedType })
+    recommended = await Story.find({ type: recommendedType, isPublic: { $ne: false } })
       .limit(limit)
       .select(selectFields)
       .populate("userId", "username");
   } else {
     // Fallback if no types exist
     recommended = await Story.aggregate([
+      { $match: { isPublic: { $ne: false } } },
       { $sample: { size: limit } },
       { $project: { name: 1, image: 1, type: 1, description: 1, likeCount: 1, createdDate: 1, viewCount: 1, status: 1, author: 1 } }
     ]);
@@ -104,6 +106,11 @@ export const likeStoryService = async (userId: string) => {
     $unwind: "$TableLike"
   },
   {
+    $match: {
+      "TableLike.isPublic": { $ne: false }
+    }
+  },
+  {
     $group: {
       _id: null,
       totalLiked: { $sum: 1 },
@@ -117,6 +124,11 @@ export const toggleLikeService = async (
   userId: string,
   storyId: string
 ) => {
+  const story = await Story.findOne({ _id: new Types.ObjectId(storyId), isPublic: { $ne: false } }).select("_id");
+  if (!story) {
+    throw new Error("Story not found");
+  }
+
   const existingLike = await StoryLike.findOne({
     userId: new Types.ObjectId(userId),
     storyId: new Types.ObjectId(storyId),
@@ -147,6 +159,11 @@ export const toggleLikeService = async (
 };
 
 export const checkLikeService = async (userId: string, storyId: string) => {
+  const story = await Story.findOne({ _id: new Types.ObjectId(storyId), isPublic: { $ne: false } }).select("_id");
+  if (!story) {
+    return false;
+  }
+
   const existingLike = await StoryLike.findOne({
     userId: new Types.ObjectId(userId),
     storyId: new Types.ObjectId(storyId),
@@ -169,6 +186,7 @@ export const createStoryService = async (userId: string, name: string, image: st
     image: image,
     type: type,
     description: description,
+    isPublic: true,
     userId: userId
   })
   return insertStory;
@@ -195,6 +213,7 @@ export const searchStoriesService = async (opts: SearchOptions) => {
   } = opts;
 
   const filter: any = {};
+  filter.isPublic = { $ne: false };
   if (q) {
     // simple text search on name and description
     filter.$or = [
@@ -237,9 +256,9 @@ export const searchStoriesService = async (opts: SearchOptions) => {
 
 export const getStoryByIdService = async (storyId: string) => {
   const selectFields =
-    "name image type description likeCount createdDate viewCount status totalChapters userId author";
+    "name image type description likeCount createdDate viewCount status totalChapters userId author isPublic";
 
-  return await Story.findById(storyId)
+  return await Story.findOne({ _id: storyId, isPublic: { $ne: false } })
     .select(selectFields)
     .populate("userId", "username");
 };

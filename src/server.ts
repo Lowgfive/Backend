@@ -5,6 +5,7 @@ import cors from "cors";
 import path from "path";
 import { createServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
+import jwt from "jsonwebtoken";
 import { connectDB } from "./config/db";
 import authRoute from "./routes/auth.route";
 import storyRoute from "./routes/stories.route";
@@ -65,6 +66,35 @@ const io = new SocketIOServer(httpServer, {
   },
 });
 
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token;
+
+  if (!token) {
+    return next(new Error("Authentication required"));
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as {
+      id?: string;
+      _id?: string;
+      role?: string;
+    };
+
+    socket.data.user = {
+      id: decoded.id || decoded._id,
+      role: decoded.role || "user",
+    };
+
+    if (!socket.data.user.id) {
+      return next(new Error("Invalid token payload"));
+    }
+
+    next();
+  } catch {
+    next(new Error("Invalid token"));
+  }
+});
+
 io.on("connection", (socket) => {
   console.log("Socket connected:", socket.id);
 
@@ -74,9 +104,11 @@ io.on("connection", (socket) => {
     console.log(`Socket ${socket.id} joined room ${roomId}`);
   });
 
-  socket.on("send_message", async (payload: { content: string; userId: string; roomId: string }) => {
+  socket.on("send_message", async (payload: { content: string; roomId: string }) => {
     try {
-      const { content, userId, roomId } = payload;
+      const { content, roomId } = payload;
+      const userId = socket.data.user?.id as string | undefined;
+
       if (!content || !userId || !roomId) return;
 
       const message = await createMessage({ content, userId, roomId });

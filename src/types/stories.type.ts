@@ -13,6 +13,7 @@ export interface IStory extends Document {
   likeCount: number;
   viewCount: number;
   status: string;
+  isPublic: boolean;
   createdDate: Date;
   totalChapters : number;
 }

@@ -14,6 +14,9 @@ export const getStoryChaptersList = async (req: Request, res: Response, next: Ne
     }
 
     const list = await getStoryChaptersListService(storyId, userId);
+    if (!list) {
+        throw new AppError(404, "STORY_NOT_FOUND", "story.notFound", "Story not found");
+    }
     res.status(200).json(list);
 };
 
@@ -30,6 +33,9 @@ export const readChapter = async (req: AuthRequest, res: Response, next: NextFun
     }
     
     const chapter = await readChapterAndPreloadService(storyId, num);
+    if (!chapter) {
+        throw new AppError(404, "CHAPTER_NOT_FOUND", "chapter.notFound", "Chapter not found");
+    }
 
     const userId = req.user?.id || req.user?._id;
 

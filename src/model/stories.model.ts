@@ -71,6 +71,11 @@ const storySchema = new Schema<IStory>(
       default: "Ongoing",
       required: true,
     },
+    isPublic: {
+      type: Boolean,
+      default: true,
+      index: true,
+    },
     createdDate: {
       type: Date,
       default: Date.now,

@@ -3,6 +3,7 @@ import {
   createAdminStoryService,
   getAdminStoriesService,
   getDashboardStatsService,
+  softDeleteAdminStoryService,
   updateAdminStoryService,
 } from "../services/admin.service";
 import { AppError } from "../utils/app-error";
@@ -14,7 +15,11 @@ export const getDashboardStats = async (
   next: NextFunction
 ) => {
   const stats = await getDashboardStatsService();
-  return res.status(200).json(stats);
+  return sendSuccess(res, 200, {
+    code: "ADMIN_DASHBOARD_FETCH_SUCCESS",
+    messageKey: "admin.dashboardFetchSuccess",
+    data: stats,
+  });
 };
 
 export const createStory = async (
@@ -108,6 +113,31 @@ export const updateStory = async (
       coverImageUrl: story.coverImageUrl || story.image,
       status: story.status,
       genres: story.genres || [],
+    },
+  });
+};
+
+export const softDeleteStory = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const rawId = req.params.id;
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
+
+  if (!id) {
+    throw new AppError(400, "STORY_ID_REQUIRED", "story.storyIdRequired", "storyId is required");
+  }
+
+  const story = await softDeleteAdminStoryService(id);
+
+  return sendSuccess(res, 200, {
+    code: "ADMIN_STORY_DELETE_SUCCESS",
+    messageKey: "admin.storyDeleteSuccess",
+    data: {
+      id: story._id,
+      title: story.title || story.name,
+      isPublic: story.isPublic,
     },
   });
 };

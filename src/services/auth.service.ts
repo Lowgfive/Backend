@@ -6,8 +6,21 @@ import { User } from "../model/user.model";
 import { Money } from "../model/money.model";
 import { AppError } from "../utils/app-error";
 
+const sanitizeUser = <T extends { password?: string }>(user: T | null) => {
+  if (!user) return null;
+
+  const candidate = user as T & { toObject?: () => T };
+  const plainUser =
+    typeof candidate.toObject === "function"
+      ? candidate.toObject()
+      : { ...user };
+
+  delete plainUser.password;
+  return plainUser;
+};
+
 export const registerService = async (data: UserType) => {
-  const { email, password, username, role = "user", language = "vi" } = data;
+  const { email, password, username, language = "vi" } = data;
 
   const existing = await User.findOne({ email });
   if (existing) {
@@ -20,11 +33,11 @@ export const registerService = async (data: UserType) => {
     username,
     email,
     password: hashed,
-    role,
+    role: "user",
     language,
   });
 
-  return user;
+  return sanitizeUser(user);
 };
 
 export const loginService = async (email: string, password: string) => {
@@ -50,7 +63,7 @@ export const loginService = async (email: string, password: string) => {
     { expiresIn: "7d" }
   );
 
-  return { user, token };
+  return { user: sanitizeUser(user), token };
 };
 
 export const getUserProfileService = async (userId: string): Promise<UserType | null> => {

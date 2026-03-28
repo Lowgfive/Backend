@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { Money } from "../model/money.model";
 import { Transaction } from "../model/transaction.model";
 import { UnlockedChapter } from "../model/unlockChapter.model";
+import { Story } from "../model/stories.model";
 import { redisClient } from "../config/redis";
 import { AppError } from "../utils/app-error";
 import { sendSuccess } from "../utils/api-response";
@@ -15,6 +16,11 @@ export const unlockChapterController = async (req: Request, res: Response, next:
 
     if (!userId || !chapterId || !storyId) {
       throw new AppError(400, "UNLOCK_REQUIRED_FIELDS", "chapterUnlock.requiredFields", "Missing required parameters");
+    }
+
+    const story = await Story.findOne({ _id: storyId, isPublic: { $ne: false } }).select("_id");
+    if (!story) {
+      throw new AppError(404, "STORY_NOT_FOUND", "story.notFound", "Story not found");
     }
 
     await Money.findOneAndUpdate(

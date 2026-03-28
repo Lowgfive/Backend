@@ -39,7 +39,10 @@ export const getLibraryByUserIdService = async (userId: string) => {
     .populate({
       path: "storyId",
       select:
-        "_id name image type likeCount viewCount totalChapters userId status",
+        "_id name image type likeCount viewCount totalChapters userId status isPublic",
+      match: {
+        isPublic: { $ne: false },
+      },
       populate: {
         path: "userId",
         select: "username",
